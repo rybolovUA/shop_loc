@@ -2,7 +2,7 @@
 namespace frontend\controllers;
 
 use Yii;
-use yii\base\InvalidParamException;
+use yii\base\InvalidArgumentException;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
@@ -25,7 +25,7 @@ class SiteController extends Controller
     {
         return [
             'access' => [
-                'class' => AccessControl::className(),
+                'class' => AccessControl::class,
                 'only' => ['logout', 'signup'],
                 'rules' => [
                     [
@@ -41,7 +41,7 @@ class SiteController extends Controller
                 ],
             ],
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'logout' => ['post'],
                 ],
@@ -89,13 +89,12 @@ class SiteController extends Controller
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
             return $this->goBack();
-        } else {
-            $model->password = '';
-
-            return $this->render('login', [
-                'model' => $model,
-            ]);
         }
+        $model->password = '';
+
+        return $this->render('login', [
+            'model' => $model,
+        ]);
     }
 
     /**
@@ -126,11 +125,10 @@ class SiteController extends Controller
             }
 
             return $this->refresh();
-        } else {
-            return $this->render('contact', [
-                'model' => $model,
-            ]);
         }
+        return $this->render('contact', [
+            'model' => $model,
+        ]);
     }
 
     /**
@@ -198,7 +196,7 @@ class SiteController extends Controller
     {
         try {
             $model = new ResetPasswordForm($token);
-        } catch (InvalidParamException $e) {
+        } catch (InvalidArgumentException $e) {
             throw new BadRequestHttpException($e->getMessage());
         }
 
