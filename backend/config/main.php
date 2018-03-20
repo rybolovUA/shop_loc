@@ -24,6 +24,7 @@ return [
             'identityClass' => 'shop\entities\User',
             'enableAutoLogin' => true,
             'identityCookie' => ['name' => '_identity', 'httpOnly' => true, 'domain' => $params['cookieDomain']],
+            'loginUrl' => ['auth/login'],
         ],
         'session' => [
             // this is the name of the session cookie used for login on the backend
@@ -54,7 +55,7 @@ return [
     ],
     'as access' => [
         'class' => 'yii\filters\AccessControl',
-        'except' => ['site/login', 'site/error'],
+        'except' => ['auth/login', 'site/error'],
         'rules' => [
             [
                 'allow' => true,
