@@ -2,16 +2,14 @@
 
 namespace frontend\services\auth;
 
-use frontend\forms\ResetPasswordForm;
-use Yii;
 use common\entities\User;
 use frontend\forms\PasswordResetRequestForm;
+use frontend\forms\ResetPasswordForm;
+use Yii;
 use yii\mail\MailerInterface;
-
 
 class PasswordResetService
 {
-
     private $mailer;
 
     public function __construct(MailerInterface $mailer)
@@ -21,22 +19,12 @@ class PasswordResetService
 
     public function request(PasswordResetRequestForm $form): void
     {
-        /* @var $user User */
-        $user = User::findOne([
-            'status' => User::STATUS_ACTIVE,
-            'email' => $form->email,
-        ]);
-
-        if (!$user) {
-            throw new \DomainException('User is not found.');
+        $user = $this->getByEmail($form->email);
+        if (!$user->isActive()) {
+            throw new \DomainException('User is not active.');
         }
-
         $user->requestPasswordReset();
-
-        if (!$user->save()) {
-            throw new \RuntimeException('Saving error.');
-        }
-
+        $this->save($user);
         $sent = $this->mailer
             ->compose(
                 ['html' => 'passwordResetToken-html', 'text' => 'passwordResetToken-text'],
@@ -45,37 +33,51 @@ class PasswordResetService
             ->setTo($user->email)
             ->setSubject('Password reset for ' . Yii::$app->name)
             ->send();
-
-        if (!$sent){
+        if (!$sent) {
             throw new \RuntimeException('Sending error.');
         }
     }
 
     public function validateToken($token): void
     {
-        if (empty($token) || !is_string($token)){
+        if (empty($token) || !is_string($token)) {
             throw new \DomainException('Password reset token cannot be blank.');
         }
-
-        if (!User::findByPasswordResetToken($token)){
+        if (!$this->existsByPasswordResetToken($token)) {
             throw new \DomainException('Wrong password reset token.');
         }
     }
 
-    /**
-     * @param string $token
-     * @param ResetPasswordForm $form
-     */
     public function reset(string $token, ResetPasswordForm $form): void
     {
-        $user = User::findByPasswordResetToken($token);
-
-        if (!$user){
-            throw new \DomainException('User not found.');
-        }
-
+        $user = $this->getByPasswordResetToken($token);
         $user->resetPassword($form->password);
+        $this->save($user);
+    }
 
+    private function getByEmail(string $email): User
+    {
+        if (!$user = User::findOne(['email' => $email])) {
+            throw new \DomainException('User is not found.');
+        }
+        return $user;
+    }
+
+    private function existsByPasswordResetToken(string $token): User
+    {
+        return User::findByPasswordResetToken($token);
+    }
+
+    private function getByPasswordResetToken(string $token): User
+    {
+        if (!$user = User::findByPasswordResetToken($token)) {
+            throw new \DomainException('User is not found.');
+        }
+        return $user;
+    }
+
+    private function save(User $user): void
+    {
         if (!$user->save()) {
             throw new \RuntimeException('Saving error.');
         }
