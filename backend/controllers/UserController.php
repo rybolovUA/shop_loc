@@ -2,6 +2,7 @@
 namespace backend\controllers;
 use shop\forms\manage\User\UserCreateForm;
 use shop\services\manage\UserManageService;
+use shop\forms\manage\User\UserEditForm;
 use Yii;
 use shop\entities\User\User;
 use backend\forms\UserSearch;
@@ -86,14 +87,21 @@ class UserController extends Controller
      */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('update', [
-                'model' => $model,
-            ]);
+        $user = $this->findModel($id);
+        $form = new UserEditForm($user);
+        if ($form->load(Yii::$app->request->post()) && $form->validate()) {
+            try {
+                $this->service->edit($user->id, $form);
+                return $this->redirect(['view', 'id' => $user->id]);
+            } catch (\DomainException $e) {
+                Yii::$app->errorHandler->logException($e);
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
         }
+        return $this->render('update', [
+            'model' => $form,
+            'user' => $user,
+        ]);
     }
     /**
      * Deletes an existing User model.
