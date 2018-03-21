@@ -1,19 +1,24 @@
 <?php
-
 namespace backend\controllers;
-
+use shop\forms\manage\User\UserCreateForm;
+use shop\services\manage\UserManageService;
 use Yii;
 use shop\entities\User\User;
 use backend\forms\UserSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
-
 /**
  * UserController implements the CRUD actions for User model.
  */
 class UserController extends Controller
 {
+    private $service;
+    public function __construct($id, $module, UserManageService $service, $config = [])
+    {
+        parent::__construct($id, $module, $config);
+        $this->service = $service;
+    }
     /**
      * @inheritdoc
      */
@@ -21,14 +26,13 @@ class UserController extends Controller
     {
         return [
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
                 ],
             ],
         ];
     }
-
     /**
      * Lists all User models.
      * @return mixed
@@ -37,18 +41,15 @@ class UserController extends Controller
     {
         $searchModel = new UserSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
     }
-
     /**
      * Displays a single User model.
      * @param integer $id
      * @return mixed
-     * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionView($id)
     {
@@ -56,7 +57,6 @@ class UserController extends Controller
             'model' => $this->findModel($id),
         ]);
     }
-
     /**
      * Creates a new User model.
      * If creation is successful, the browser will be redirected to the 'view' page.
@@ -64,51 +64,48 @@ class UserController extends Controller
      */
     public function actionCreate()
     {
-        $model = new User();
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $form = new UserCreateForm();
+        if ($form->load(Yii::$app->request->post()) && $form->validate()) {
+            try {
+                $user = $this->service->create($form);
+                return $this->redirect(['view', 'id' => $user->id]);
+            } catch (\DomainException $e) {
+                Yii::$app->errorHandler->logException($e);
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
         }
-
         return $this->render('create', [
-            'model' => $model,
+            'model' => $form,
         ]);
     }
-
     /**
      * Updates an existing User model.
      * If update is successful, the browser will be redirected to the 'view' page.
      * @param integer $id
      * @return mixed
-     * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
-
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
+        } else {
+            return $this->render('update', [
+                'model' => $model,
+            ]);
         }
-
-        return $this->render('update', [
-            'model' => $model,
-        ]);
     }
-
     /**
      * Deletes an existing User model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param integer $id
      * @return mixed
-     * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionDelete($id)
     {
         $this->findModel($id)->delete();
-
         return $this->redirect(['index']);
     }
-
     /**
      * Finds the User model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
@@ -120,8 +117,8 @@ class UserController extends Controller
     {
         if (($model = User::findOne($id)) !== null) {
             return $model;
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
         }
-
-        throw new NotFoundHttpException('The requested page does not exist.');
     }
 }
