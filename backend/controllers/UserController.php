@@ -1,5 +1,7 @@
 <?php
+
 namespace backend\controllers;
+
 use shop\forms\manage\User\UserCreateForm;
 use shop\services\manage\UserManageService;
 use shop\forms\manage\User\UserEditForm;
@@ -111,7 +113,8 @@ class UserController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $this->service->remove($id);
+
         return $this->redirect(['index']);
     }
     /**
