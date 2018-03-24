@@ -2,7 +2,6 @@
 
 namespace shop\forms\manage;
 
-
 use shop\entities\Meta;
 use yii\base\Model;
 
