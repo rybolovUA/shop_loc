@@ -22,6 +22,7 @@ class MetaBehavior extends Behavior
             ActiveRecord::EVENT_BEFORE_UPDATE => 'onBeforeSave',
         ];
     }
+
     public function onAfterFind(Event $event): void
     {
         $model = $event->sender;
@@ -32,10 +33,11 @@ class MetaBehavior extends Behavior
             ArrayHelper::getValue($meta, 'keywords')
         );
     }
+
     public function onBeforeSave(Event $event): void
     {
         $model = $event->sender;
-        $model->setAttribute('meta_json', Json::encode([
+        $model->setAttribute($this->jsonAttribute, Json::encode([
             'title' => $model->{$this->attribute}->title,
             'description' => $model->{$this->attribute}->description,
             'keywords' => $model->{$this->attribute}->keywords,
